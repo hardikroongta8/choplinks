@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/hardikroongta8/choplinks/internal/model"
 	"github.com/hardikroongta8/choplinks/internal/routes"
 	"github.com/hardikroongta8/choplinks/pkg/config"
 	"github.com/hardikroongta8/choplinks/pkg/db"
@@ -15,12 +16,12 @@ func main() {
 		cfg.Server.Port,
 		cfg.Server.Environment,
 	)
-	db.Connect(cfg.Database.URI)
-	defer db.Disconnect()
-
-	database := db.GetDatabase(cfg.Database.DBName)
-
-	err := http.ListenAndServe(":"+cfg.Server.Port, routes.SetupRoutes(database))
+	database := db.Connect(cfg.DB.URI)
+	err := database.AutoMigrate(&model.UrlMap{})
+	if err != nil {
+		log.Fatal("Error while migrating the DB:", err.Error())
+	}
+	err = http.ListenAndServe(":"+cfg.Server.Port, routes.SetupRoutes(database))
 	if err != nil {
 		log.Fatal("Some error occurred while listening to the server!")
 	}

@@ -3,20 +3,17 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/hardikroongta8/choplinks/internal/middlewares"
-	"go.mongodb.org/mongo-driver/mongo"
-	"net/http"
+	"github.com/hardikroongta8/choplinks/internal/service"
+	"gorm.io/gorm"
 )
 
-func SetupRoutes(db *mongo.Database) *gin.Engine {
+func SetupRoutes(db *gorm.DB) *gin.Engine {
+	urlMapService := service.URLMapService{DB: db}
 	router := gin.Default()
 	router.Use(middlewares.GlobalMiddleware)
-	AttachUserRouter(router.Group("/user"), db)
+	router.POST("/url/create", urlMapService.CreateUrlMap)
 
-	protectedRouter := router.Group("/")
-	protectedRouter.Use(middlewares.AuthMiddleware)
-	protectedRouter.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "This is a protected route!")
-	})
+	router.GET("/:shortenedURLPath", urlMapService.RedirectToOriginalURL)
 
 	return router
 }
