@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/hardikroongta8/choplinks/internal/model"
 	"github.com/hardikroongta8/choplinks/internal/repo"
+	"github.com/hardikroongta8/choplinks/pkg/config"
 	"github.com/hardikroongta8/choplinks/pkg/utils"
 	"gorm.io/gorm"
 	"net/http"
@@ -48,7 +49,7 @@ func (service *URLMapService) CreateUrlMap(c *gin.Context) {
 	if err != nil {
 		utils.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 	}
-	shortenedUrl := "http://localhost:7500/" + shortenedUrlPath
+	shortenedUrl := config.GetConfig().Server.BaseURL + "/" + shortenedUrlPath
 	utils.SendSuccessResponse(c, http.StatusCreated, shortenedUrl)
 }
 
@@ -58,10 +59,14 @@ func (service *URLMapService) RedirectToOriginalURL(c *gin.Context) {
 		utils.SendErrorResponse(c, http.StatusBadRequest, "missing urlMap_id in params")
 	}
 	//
-	repo := repo.UrlMapsRepo{DB: service.DB}
-	urlMap, err := repo.FindUrlMap(shortURLPath)
+	urlMapsRepo := repo.UrlMapsRepo{DB: service.DB}
+	urlMap, err := urlMapsRepo.FindUrlMap(shortURLPath)
 	if err != nil {
 		utils.SendErrorResponse(c, http.StatusNotFound, err.Error())
+	}
+	if urlMap == nil {
+		utils.SendErrorResponse(c, http.StatusNotFound, "Path Not Found!")
+		return
 	}
 
 	c.Redirect(http.StatusFound, urlMap.OriginalURL)

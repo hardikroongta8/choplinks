@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	Server struct {
+		BaseURL     string
 		Port        string
 		Environment string
 		JWTSecret   string
@@ -20,12 +21,15 @@ type Config struct {
 	}
 }
 
+var appConfig *Config = nil
+
 func Load() *Config {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file found...")
 	}
 	cfg := &Config{}
+	cfg.Server.BaseURL = os.Getenv("BASE_URL")
 	cfg.Server.Port = os.Getenv("PORT")
 	cfg.Server.Environment = os.Getenv("ENVIRONMENT")
 	cfg.Server.JWTSecret = os.Getenv("JWT_SECRET")
@@ -37,5 +41,10 @@ func Load() *Config {
 		cfg.DB.password + "@tcp(127.0.0.1:3306)/" +
 		cfg.DB.dbName + "?charset=utf8&parseTime=True&loc=Local"
 
-	return cfg
+	appConfig = cfg
+	return appConfig
+}
+
+func GetConfig() *Config {
+	return appConfig
 }
