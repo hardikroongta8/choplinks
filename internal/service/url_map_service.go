@@ -25,10 +25,12 @@ func (service *URLMapService) CreateUrlMap(c *gin.Context) {
 
 	if err != nil {
 		utils.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	if len(ogUrl.Url) == 0 {
 		utils.SendErrorResponse(c, http.StatusBadRequest, "invalid url")
+		return
 	}
 
 	urlMapsRepo := repo.UrlMapsRepo{DB: service.DB}
@@ -48,21 +50,25 @@ func (service *URLMapService) CreateUrlMap(c *gin.Context) {
 
 	if err != nil {
 		utils.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
 	}
 	shortenedUrl := config.GetConfig().Server.BaseURL + "/" + shortenedUrlPath
 	utils.SendSuccessResponse(c, http.StatusCreated, shortenedUrl)
+	return
 }
 
 func (service *URLMapService) RedirectToOriginalURL(c *gin.Context) {
 	shortURLPath, found := c.Params.Get("shortenedURLPath")
 	if found == false {
 		utils.SendErrorResponse(c, http.StatusBadRequest, "missing urlMap_id in params")
+		return
 	}
 	//
 	urlMapsRepo := repo.UrlMapsRepo{DB: service.DB}
 	urlMap, err := urlMapsRepo.FindUrlMap(shortURLPath)
 	if err != nil {
 		utils.SendErrorResponse(c, http.StatusNotFound, err.Error())
+		return
 	}
 	if urlMap == nil {
 		utils.SendErrorResponse(c, http.StatusNotFound, "Path Not Found!")

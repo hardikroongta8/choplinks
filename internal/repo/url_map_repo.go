@@ -24,5 +24,4 @@ func (repo *UrlMapsRepo) FindUrlMap(shortenedURLPath string) (*model.UrlMap, err
 		return nil, res.Error
 	}
 	return &urlMap, nil
-
 }
