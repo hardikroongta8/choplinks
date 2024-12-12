@@ -11,11 +11,7 @@ import (
 
 func main() {
 	cfg := config.Load()
-	log.Printf(
-		"Starting the server on port %s in %s mode",
-		cfg.Server.Port,
-		cfg.Server.Environment,
-	)
+	log.Printf("Starting the server on port %s", cfg.Server.Port)
 	database := db.Connect(cfg.DB.URI)
 	err := database.AutoMigrate(&model.UrlMap{})
 	if err != nil {
