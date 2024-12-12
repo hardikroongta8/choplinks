@@ -4,20 +4,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    depends_on:
-      - mysql
+    container_name: go-server
     ports:
       - '7500:7500'
     env_file:
       - .env
-  mysql:
-    image: mysql:8
-    container_name: mysql-container
-    restart: always
-    ports:
-      - "8000:3306"
-    env_file:
       - .env.db
-    volumes:
-      - ./sql:/docker-entrypoint-initdb.d
-      - ./mysql_data:/var/lib/mysql
+    networks:
+      - hr_docker_network
+
+networks:
+  hr_docker_network:
+    external: true
