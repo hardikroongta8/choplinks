@@ -1,11 +1,12 @@
 package model
 
 import (
-	"gorm.io/gorm"
+	"time"
 )
 
 type UrlMap struct {
 	ShortenedURLPath string `gorm:"primaryKey"`
 	OriginalURL      string
-	gorm.Model
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
