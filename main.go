@@ -1,24 +1,23 @@
 package main
 
 import (
-	"github.com/hardikroongta8/choplinks/internal/model"
-	"github.com/hardikroongta8/choplinks/internal/routes"
-	"github.com/hardikroongta8/choplinks/pkg/config"
-	"github.com/hardikroongta8/choplinks/pkg/db"
 	"log"
-	"net/http"
 )
 
 func main() {
-	cfg := config.Load()
+	cfg, err := LoadConfig()
+	if err != nil {
+		log.Fatalln("Error while loading .env File:", err.Error())
+	}
 	log.Printf("Starting the server on port %s", cfg.Server.Port)
-	database := db.Connect(cfg.DB.URI)
-	err := database.AutoMigrate(&model.UrlMap{})
+	store, err := NewMySQLStore()
 	if err != nil {
-		log.Fatal("Error while migrating the DB:", err.Error())
+		log.Fatalln("Error while initializing db store:", err.Error())
 	}
-	err = http.ListenAndServe(":"+cfg.Server.Port, routes.SetupRoutes(database))
+	server := NewAPIServer(":"+cfg.Server.Port, store)
+	err = store.Init()
 	if err != nil {
-		log.Fatal("Some error occurred while listening to the server!")
+		log.Fatalln("Error initializing tables:", err.Error())
 	}
+	server.Run()
 }

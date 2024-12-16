@@ -1,8 +1,7 @@
-package config
+package main
 
 import (
 	"github.com/joho/godotenv"
-	"log"
 	"os"
 )
 
@@ -18,10 +17,10 @@ type Config struct {
 
 var appConfig *Config = nil
 
-func Load() *Config {
+func LoadConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found...")
+		return nil, err
 	}
 	cfg := &Config{}
 	cfg.Server.BaseURL = os.Getenv("BASE_URL")
@@ -30,7 +29,7 @@ func Load() *Config {
 	cfg.DB.URI = os.Getenv("DB_URI")
 
 	appConfig = cfg
-	return appConfig
+	return appConfig, nil
 }
 
 func GetConfig() *Config {
