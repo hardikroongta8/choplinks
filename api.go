@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -27,6 +29,7 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/user", errorHandler(s.handleUser))
 	router.HandleFunc("/url", errorHandler(s.handleURLMap)) // ADD JWT MIDDLEWARE
+	router.HandleFunc("/{id}", errorHandler(s.handleRedirect))
 	//router.Handle("/user", http.NewServeMux())
 
 	log.Println("Server running on port:", s.listenAddr)
@@ -46,6 +49,9 @@ func (s *APIServer) handleURLMap(w http.ResponseWriter, r *http.Request) error {
 	}
 	if r.Method == "GET" {
 		return s.handleGetURLMaps(w, r)
+	}
+	if r.Method == "DELETE" {
+		return s.handleDeleteURLMap(w, r)
 	}
 	return fmt.Errorf("method not allowed: %s", r.Method)
 }
@@ -78,18 +84,18 @@ func (s *APIServer) handleCreateURLMap(w http.ResponseWriter, r *http.Request) e
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	urlMap := URLMap{
-		ShortenedURLPath: string(b),
-		OriginalURL:      createUrlMapBody.OriginalUrl,
-		UserID:           createUrlMapBody.UserID,
-		CreatedAt:        time.Now().UTC(),
-		UpdatedAt:        time.Now().UTC(),
+		ID:          string(b),
+		OriginalURL: createUrlMapBody.OriginalUrl,
+		UserID:      createUrlMapBody.UserID,
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
 	}
 	err := s.store.CreateURLMap(&urlMap)
 	if err != nil {
 		return err
 	}
 	return writeJSON(w, http.StatusCreated, apiResponse{
-		Data: GetConfig().Server.BaseURL + "/" + urlMap.ShortenedURLPath,
+		Data: GetConfig().Server.BaseURL + "/" + urlMap.ID,
 	})
 }
 
@@ -103,6 +109,43 @@ func (s *APIServer) handleGetURLMaps(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 	return writeJSON(w, http.StatusOK, apiResponse{Data: urlMaps})
+}
+
+func (s *APIServer) handleDeleteURLMap(w http.ResponseWriter, r *http.Request) error {
+	id := r.URL.Query().Get("id")
+	urlMap, err := s.store.GetURLMapByID(id)
+	if err != nil {
+		return err
+	}
+	getUrlMapsBody := new(GetURLMapsReqBody)
+	if err = json.NewDecoder(r.Body).Decode(getUrlMapsBody); err != nil {
+		return err
+	}
+	if urlMap.UserID != getUrlMapsBody.UserID {
+		return errors.New("requested resource does not exist")
+	}
+	err = s.store.DeleteURLMapByID(id)
+	if err != nil {
+		return err
+	}
+	return writeJSON(w, http.StatusOK, apiResponse{Data: id})
+}
+
+func (s *APIServer) handleRedirect(w http.ResponseWriter, r *http.Request) error {
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok {
+		return errors.New("ID param is missing")
+	}
+	urlMap, err := s.store.GetURLMapByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return writeJSON(w, http.StatusNotFound, apiResponse{Error: "Invalid URL"})
+		}
+		return err
+	}
+	http.Redirect(w, r, urlMap.OriginalURL, http.StatusFound)
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) error {
