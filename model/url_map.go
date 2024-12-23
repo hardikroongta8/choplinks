@@ -1,12 +1,6 @@
-package main
+package model
 
 import "time"
-
-type User struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
 
 type URLMap struct {
 	ID          string    `json:"id"`
@@ -16,16 +10,6 @@ type URLMap struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-type CreateUserReqBody struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 type CreateURLMapReqBody struct {
 	OriginalUrl string `json:"original_url"`
-	UserID      string `json:"user_id"`
-}
-
-type GetURLMapsReqBody struct {
-	UserID string `json:"user_id"`
 }
